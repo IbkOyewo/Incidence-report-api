@@ -1,39 +1,44 @@
-const {createUser, validateUserLogin } = require('../services/index')
+const {createUser, validatePassword } = require('../services')
 
-const createNewUser = async (req, res, next) => {
+const createNewUser = async(req, res, next) => {
     try {
         const { body } = req
-        const newUser = await createUser(body)
+        const newUser  = await createUser(body)
+        const { password, ...user } = newUser
 
         res.status(201).json({
             status: 'success',
             message: `User created successfully`,
-            data: newUser
+            data: user
         })
     } 
     catch (error) {
-        return next(error)
+        next(error)
     }
 }
 
 const loginUser = async(req, res, next) => {
     try {
-        const { email, password } = req
-        const validated = await validateUserLogin(email, password)
+        const { user, password } = req
+       
+        const validated = await validatePassword(user, password)
 
-        res.status(201).json({
-            status: 'success',
-            message: `User logged in successfully`,
-            data: validated
-        })
+        if (!validated) {
+            res.status(401).json({
+                status: 'fail',
+                message: 'Invalid credentials',
+                data: 'Error logging in user'
+            })
+        } else {
+            res.status(201).json({
+                status: 'success',
+                message: 'User logged in successfully',
+                data: validated
+            })
+        }
     } catch (error) {
-        res.status(401).json({
-            status: 'fail',
-            message: error.message
-        })
+        next(error)
     }
-    next()
 }
 
 module.exports = { createNewUser, loginUser }
-

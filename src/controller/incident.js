@@ -36,10 +36,10 @@ const fetchAllIncidents = async(req, res) => {
     }
 }
 
-const fetchUserIncidents = async(req, res) => {
+const fetchUserIncidents = async(req, res, next) => {
     try {
-        const { params: { id } } = req
-        const userIncidentReports = await getUserIncident(id)
+        const { authorizedUser } = req
+        const userIncidentReports = await getUserIncident(authorizedUser)
 
         res.status(200).json({
             status: 'success',
@@ -48,10 +48,7 @@ const fetchUserIncidents = async(req, res) => {
         })
     }
     catch (err) {
-        res.status(404).json({
-            status: 'fail',
-            message: err.message
-        })
+        next(error)
     }
 }
 
