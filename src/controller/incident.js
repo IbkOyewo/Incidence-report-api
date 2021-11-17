@@ -1,6 +1,6 @@
 const { createReport, getAllIncidents, getUserIncident } = require("../services")
 
-const createIncidentReport = async(req, res) => {
+const createIncidentReport = async(req, res, next) => {
     try {
         const report = await createReport(req)
 
@@ -11,10 +11,7 @@ const createIncidentReport = async(req, res) => {
         })
     }
     catch (err) {
-        res.status(404).json({
-            status: 'fail',
-            message: err.message
-        })
+       return next(err)
     }
 }
 
@@ -29,17 +26,14 @@ const fetchAllIncidents = async(req, res) => {
         })
     }
     catch (err) {
-        res.status(404).json({
-            status: 'fail',
-            message: err.message
-        })
+        return next(err)
     }
 }
 
 const fetchUserIncidents = async(req, res, next) => {
     try {
-        const { authorizedUser } = req
-        const userIncidentReports = await getUserIncident(authorizedUser)
+        const { user: {id} } = req
+        const userIncidentReports = await getUserIncident(id)
 
         res.status(200).json({
             status: 'success',

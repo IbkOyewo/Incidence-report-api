@@ -25,5 +25,18 @@ const createIncidentSchema = {
     }),
     message: 'Error creating incident report'
 }
+const forgotPasswordSchema = {
+    schema: Joi.object().keys({
+        email: Joi.string().email().required(),
+    }),
+    message: 'Error retrieving password'
+}
 
-module.exports = { createUserSchema, loginUserSchema, createIncidentSchema }
+const resetPasswordSchema = {
+    schema: Joi.object().keys({
+        password: Joi.string().required()
+    }),
+    message: 'Unable to reset password'
+}
+
+module.exports = { createUserSchema, loginUserSchema, createIncidentSchema, forgotPasswordSchema, resetPasswordSchema }

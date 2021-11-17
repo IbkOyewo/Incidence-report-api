@@ -40,6 +40,14 @@ const queries = {
         SELECT * 
         FROM incidents
         WHERE client_id=$1
+    `,
+
+    updatePassword: `
+        UPDATE users
+        SET password = $1,
+        updated_at = NOW()
+        WHERE id = $2
+        RETURNING *
     `
     }
 

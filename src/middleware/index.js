@@ -1,111 +1,72 @@
 const { getUser, fetchWeather } = require('../services')
-const { validateToken } = require("../utils")
+const { validateToken, generateToken, generateResetToken} = require("../utils")
 
-// const checkUserExists = (type) => async(req, res, next) => {
-//     try {
-//         const { body } = req
-//         const { email } = body
-//         const [ user ] = await getUser(email)
-
-//         if (type === 'register') {
-//             if (user) {
-//                 return res.status(401).json({
-//                     status: 'fail',
-//                     message: 'User already exists. Log in',
-//                     data: []
-//                 })
-//             }
-    
-//             next()
-//         } else {
-//             if (!user) {
-//                 return res.status(401).json({
-//                     status: 'fail',
-//                     message: 'Invalid credentials',
-//                     data: []
-//                 })
-//             }
-    
-//             req.user = user
-//             req.password = body.password
-//             next()
-//         }
-//     }
-//     catch (err) {
-//         next(err)
-//     }
-// }
-
-const checkIfUserRegister = async(req, res, next) => {
+const checkUser = (type) => async(req, res, next) => {
     try {
         const { body: { email } } = req
         const [ user ] = await getUser(email)
-        
+        if(type === 'login'){
+           if(!user) {
+            return res.status(400).json({
+                status: 'fail',
+                message: 'Invalid credentials',
+                data: []
+            })
+           }else {
+            req.user = user
+            return next()
+           }
+        }
         if (user) {
-            return res.status(401).json({
+            return res.status(400).json({
                 status: 'fail',
                 message: 'User already exists. Log in',
                 data: []
             })
         }
-
-        next()
-    } catch (error) {
-        next(error)
+        return next()
+    } catch(error){
+        return next(error);
     }
 }
 
-const checkIfUserExistForLogin = async(req, res, next) => {
-    try {
-        const { body } = req
-        const { email } = body
-        const [ user ] = await getUser(email)
-
-        if (!user) {
-            return res.status(401).json({
-                status: 'fail',
-                message: 'Invalid credentials',
-                data: []
-            })
-        }
-
-        req.user = user
-        req.password = body.password
-        next()
-    } catch (error) {
-        next(error)
-    }
-}
 
 // verify token
-const verifyToken = async(req, res, next) => {
+const verifyToken = (type) => async(req, res, next) => {
     try {
-        var token = req.headers['x-access-token']
-    
+        let token
+        if(type === 'logged-in') {
+            token = req.headers['x-access-token']
+        } else {
+            token = req.query.token
+        }
+
         if (!token)
             return res.status(403).json({
                 status: 'fail',
                 message: 'No token provided.'
             })
         
-        const tokenValidated = await validateToken(token)
-    
-        if (!tokenValidated) 
+        const tokenValidated = await validateToken(token, type)
+        if(tokenValidated.message) {
             return res.status(403).json({
                 status: 'fail',
-                message: 'Failed to authenticate token.'
+                message: tokenValidated.message
             })
-        
+        }        
         const { email, id } = tokenValidated
-        const isAuthorized = await getUser(email)
+        const [user] = await getUser(email)
 
-        if (!isAuthorized) 
+        if (!user) {
             return res.status(403).json({
                 status: 'fail',
                 message: 'Failed to authenticate token.'
             })
-        req.authorizedUser = id
-        next()
+        }
+
+        delete user.password;
+        req.user = user
+        return next()
     }
     catch (err) {
         next(err)
@@ -143,9 +104,7 @@ const validateUser = (data, type) => async (req, res, next) => {
 
 const getWeatherReport = async(req, res, next) => {
     try {
-        const { body, authorizedUser } = req        
-        const { city, country } = body
-
+        const { body: {city, country} } = req;
         const weather = await fetchWeather(city, country)
     
         if (!weather) 
@@ -153,20 +112,48 @@ const getWeatherReport = async(req, res, next) => {
                 status: 'failed',
                 message: 'Could not fetch weather for city and country'
             })
-
         req.weather = weather.data
-        req.id = authorizedUser
         next()
     }
     catch (err) {
         next(err)
     }
 }
+
+const generateResetPasswordToken = async(req, res, next) => {
+    try {
+        const { body: {email} } = req;
+        const [user] = await getUser(email)
+    
+        if (!user) 
+            return res.status(404).json({
+                status: 'failed',
+                message: 'User not found'
+            })
+
+        const token = await generateResetToken(user)
+        req.token = token
+        next()
+    }
+    catch (err) {
+        next(err)
+    }
+}
+
+const resetPassword = async(req, res, next) => {
+    try {
+        
+    } catch (error) {
+
+        
+    }
+}
+
 module.exports = {
-    checkIfUserRegister,
-    checkIfUserExistForLogin,
-    // checkUserExists,
     validateUser,
     getWeatherReport,
-    verifyToken
+    verifyToken,
+    checkUser,
+    generateResetPasswordToken,
+    
 }

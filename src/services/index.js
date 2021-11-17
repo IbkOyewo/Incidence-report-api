@@ -12,6 +12,7 @@ const createUser = async(body) => {
 }
 
 const validatePassword = async(user, password) => {
+    console.log(user);
     const isValid = await comparePassword(password, user.password)
 
     if (isValid) {
@@ -36,7 +37,7 @@ const fetchWeather = async(city, country) => {
 
 // Creating report
 const createReport = (req) => {
-    const { body, id, weather } = req
+    const { body, user: {id} , weather } = req
     const { incident_description, city, country } = body
 
     const payload = [ id, incident_description, city, country, weather ]
@@ -50,6 +51,13 @@ const getAllIncidents = () => db.any(queries.getIncidents)
 // Getting individual incidents
 const getUserIncident = id => db.any(queries.getUserIncidents, id)
 
+const updatePassword = async(req) => {
+    const { body: {password}, user: {id}} = req
+    const encryptedPassword = await hashPassword(password)
+    return db.one(queries.updatePassword, [encryptedPassword,id])
+
+}
+
 module.exports = {
     createUser,
     validatePassword,
@@ -57,5 +65,6 @@ module.exports = {
     fetchWeather,
     createReport,
     getAllIncidents,
-    getUserIncident
+    getUserIncident,
+    updatePassword
 }
